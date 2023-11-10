@@ -25,23 +25,27 @@ const client = new Client({
 // Create a new Collection to hold our commands
 client.commands = new Collection();
 
-const commandsPath = path.join(__dirname, 'commands');
-const commandFiles = fs
-  .readdirSync(commandsPath)
-  .filter(file => file.endsWith('.js'));
+const foldersPath = path.join(__dirname, 'commands');
+const commandFolders = fs.readdirSync(foldersPath);
 
-// Use fs to read *.js command files in the 'commands' directory
-for (const file of commandFiles) {
-  const filePath = path.join(commandsPath, file);
-  console.log(`Loading command at ${filePath}`);
-  const command = require(filePath);
-  // Set a new item in the Collection with the key as the command name and the value as the exported module
-  if ('data' in command && 'execute' in command) {
-    client.commands.set(command.data.name, command);
-  } else {
-    console.log(
-      `[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`,
-    );
+for (const folder of commandFolders) {
+  const commandsPath = path.join(foldersPath, folder);
+  const commandFiles = fs
+    .readdirSync(commandsPath)
+    .filter(file => file.endsWith('.js'));
+
+  // Use fs to read *.js command files in the 'commands' directory
+  for (const file of commandFiles) {
+    const filePath = path.join(commandsPath, file);
+    const command = require(filePath);
+    // Set a new item in the Collection with the key as the command name and the value as the exported module
+    if ('data' in command && 'execute' in command) {
+      client.commands.set(command.data.name, command);
+    } else {
+      console.log(
+        `[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`,
+      );
+    }
   }
 }
 console.log(
@@ -50,49 +54,21 @@ console.log(
     .join('\n')}`,
 );
 
-// When the client is ready, run this code (only once)
-// We call the client 'c' to avoid confusion with the 'client' variable in the outer scope
-client.once(Events.ClientReady, c => {
-  console.log(`Ready! Logged in as ${c.user.tag}`);
-});
+const eventsPath = path.join(__dirname, 'events');
+const eventFiles = fs
+  .readdirSync(eventsPath)
+  .filter(file => file.endsWith('.js'));
 
-client
-  .on(Events.MessageReactionAdd, reaction => {
-    console.log(
-      `Somebody just reacted with a ${reaction.emoji} (ID: ${reaction.emoji.id})`,
-    );
-  })
-  .on(Events.InteractionCreate, async interaction => {
-    console.log(
-      `${interaction.user.username} just attempted to run ${interaction.commandName}`,
-    );
-    if (!interaction.isChatInputCommand()) return;
-    const command = interaction.client.commands.get(interaction.commandName);
+for (const file of eventFiles) {
+  const filePath = path.join(eventsPath, file);
+  const event = require(filePath);
+  if (event.once) {
+    client.once(event.name, (...args) => event.execute(...args));
+  } else {
+    client.on(event.name, (...args) => event.execute(...args));
+  }
+}
+console.log(`${eventFiles.length} event handlers loaded`);
 
-    if (!command) {
-      console.error(
-        `No command matching ${interaction.commandName} was found.`,
-      );
-      return;
-    }
-
-    try {
-      await command.execute(interaction);
-    } catch (error) {
-      console.error(error);
-      if (interaction.replied || interaction.deferred) {
-        await interaction.followUp({
-          content: 'There was an error while executing this command!',
-          ephemeral: true,
-        });
-      } else {
-        await interaction.reply({
-          content: 'There was an error while executing this command!',
-          ephemeral: true,
-        });
-      }
-    }
-  });
-
-// Log in to Discord with your client's token
+// Log in to Discord with client token
 client.login(DISCORD_TOKEN);
