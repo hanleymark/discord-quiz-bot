@@ -5,7 +5,7 @@ module.exports = {
   once: false,
   execute(reaction) {
     console.log(
-      `Somebody just reacted with a ${reaction.emoji}`,
+      `Somebody just reacted with a ${reaction.emoji} in ${reaction.message.channel.name}`,
     );
   },
 };
