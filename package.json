@@ -2,7 +2,7 @@
   "name": "discord-quiz-bot",
   "version": "1.0.0",
   "description": "A Discord Quiz Bot using OpenAI API",
-  "main": "app.js",
+  "main": "index.js",
   "scripts": {
     "start": "node app.js",
     "dev": "nodemon app.js",
